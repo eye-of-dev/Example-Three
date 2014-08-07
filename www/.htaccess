@@ -1,0 +1,19 @@
+RewriteEngine On
+Options +FollowSymLinks
+AddDefaultCharset utf-8
+RewriteRule ^.htaccess$ - [F]
+
+# RewriteBase equivalent - Production
+RewriteCond %{HTTP_HOST} !^localhost$
+RewriteRule . - [E=REWRITEBASE:/]
+
+# RewriteBase equivalent - Development
+RewriteCond %{HTTP_HOST} ^localhost$
+RewriteRule . - [E=REWRITEBASE:]
+
+# Rewriting
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ %{ENV:REWRITEBASE}index.php/$1 [L]
+
+php_value date.timezone Asia/Muscat
