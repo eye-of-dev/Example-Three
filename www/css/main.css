@@ -1,0 +1,94 @@
+html, body      {height: 100%; color:#4d4d4d; margin: 0; padding: 0; font-size: 13px; font-family:Tahoma, Arial, Helvetica, sans-serif; }
+body            {background:#fdffeb;}
+table td        {padding: 0px }
+p               {margin: 0; padding: 6px 0 5px; }
+ul,ol           {margin: 0; padding: 0; }
+li              {margin: 0; padding: 0; list-style-type: none;}
+form            {padding: 0; margin: 0; }
+select          {padding:2px;}
+input,h3        {margin:0; padding:0;}
+a               {text-decoration: underline; color: #6e9700; cursor:pointer;}
+a:hover         {text-decoration: none; cursor:pointer;}
+img             {border: 0; margin: 0; padding: 0;}
+img, a, span	{outline:none;}
+dt,dl,dd        {margin:0; padding:0;}
+.clear, .clr    {clear: both; }
+dfn {
+    font-style:normal;
+}
+
+
+#container{
+    width:800px; 
+    margin:0 auto; 
+    padding-top:30px;
+}
+
+#container h1{
+    text-align: center;
+}
+
+#body {
+    float: left;
+    width: 500px;
+    text-align: center;
+}
+
+#sidebar {
+    margin-left: 525px;
+}
+
+#body table{
+    margin: 0 auto;
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+#body table td{
+    border: 1px solid #000;
+    width: 50px;
+    height: 50px;
+    
+}
+
+#sidebar .free{
+    color: #6e9700;
+}
+
+#sidebar .busy{
+    color: #990000;
+}
+
+#body .errors{
+    color: #E13300;
+    margin-top: 50px;
+}
+
+#game_field .cross{
+    background: url("../images/cross.png") no-repeat center;
+}
+
+#game_field .circle{
+    background: url("../images/circle.png") no-repeat center;
+}
+
+.confirm_game{
+    color: #6e9700;
+    height: 30px;
+    text-align: center;
+    padding-top: 15px;
+}
+
+.win{
+    color: #6e9700;
+    height: 20px;
+    text-align: center;
+    padding-top: 15px;
+}
+
+.lose{
+    color: #E13300;
+    height: 20px;
+    text-align: center;
+    padding-top: 15px;
+}
