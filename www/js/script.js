@@ -50,19 +50,19 @@ $(document).ready(function() {
 
 });
 
-window.onbeforeunload = function() {
-
-    var uid = $.cookie('GAME_UID');
-
-    $.ajax({
-        type: 'POST',
-        url: 'main/deleteplayer',
-        data: 'uid=' + uid,
-        dataType: 'json',
-        success: function(data) {
-        }
-    });
-};
+//window.onbeforeunload = function() {
+//
+//    var uid = $.cookie('GAME_UID');
+//
+//    $.ajax({
+//        type: 'POST',
+//        url: 'main/deleteplayer',
+//        data: 'uid=' + uid,
+//        dataType: 'json',
+//        success: function(data) {
+//        }
+//    });
+//};
 
 function letsStep(uid, mark, field_id, x, y) {
 
