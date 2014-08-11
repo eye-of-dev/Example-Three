@@ -50,18 +50,21 @@ $(document).ready(function() {
 
 });
 
-var wins_combinations = [
-    ['field_1', 'field_2', 'field_3'],
-    ['field_4', 'field_5', 'field_6'],
-    ['field_7', 'field_8', 'field_9'],
-    ['field_1', 'field_4', 'field_7'],
-    ['field_2', 'field_5', 'field_8'],
-    ['field_3', 'field_6', 'field_9'],
-    ['field_1', 'field_5', 'field_3'],
-    ['field_3', 'field_5', 'field_7']
-];
+window.onbeforeunload = function() {
 
-function letsStep(uid, mark, field_id) {
+    var uid = $.cookie('GAME_UID');
+
+    $.ajax({
+        type: 'POST',
+        url: 'main/deleteplayer',
+        data: 'uid=' + uid,
+        dataType: 'json',
+        success: function(data) {
+        }
+    });
+};
+
+function letsStep(uid, mark, field_id, x, y) {
 
     $('.errors').html('');
 
@@ -70,67 +73,37 @@ function letsStep(uid, mark, field_id) {
 
     var move = $.cookie('move');
 
-    if (parseInt(move) > 0 && ! $('#' + field_id).hasClass('cross') && ! $('#' + field_id).hasClass('circle'))
+    if($('#' + field_id).hasClass('cross') || $('#' + field_id).hasClass('circle')){
+        $('.errors').html('Вы пытаетесь отметить выбранную клетку.');
+        return false;
+    }
+
+    if (parseInt(move) === 1)
     {
         $.cookie('move', '0');
 
         $('#' + field_id).addClass(mark);
 
-        var length = wins_combinations.length;
-        for (var i = 0; i < length; i++) {
+        $.ajax({
+            type: 'POST',
+            url: 'main/letsStep',
+            data: 'uid=' + uid + '&mark=' + mark + '&field_id=' + field_id + '&x=' + x + '&y=' + y,
+            dataType: 'json',
+            async: false,
+            beforeSend: function() {
 
-            var counter = 0;
-            var new_length = wins_combinations[i].length;
-            for (var y = 0; y < new_length; y++) {
+            },
+            complete: function() {
 
-                if ($('#' + wins_combinations[i][y]).hasClass(mark))
-                    counter++;
+            },
+            success: function(data) {
             }
-            if (counter === 3)
-                break;
-        }
-
-        if (counter === 3)
-        {
-            $.ajax({
-                type: 'POST',
-                url: 'main/gameOver',
-                data: 'uid=' + uid + '&mark=' + mark + '&field_id=' + field_id,
-                dataType: 'json',
-                async: false,
-                beforeSend: function() {
-
-                },
-                complete: function() {
-
-                },
-                success: function(data) {
-                }
-            });
-        }
-        else
-        {
-            $.ajax({
-                type: 'POST',
-                url: 'main/letsStep',
-                data: 'uid=' + uid + '&mark=' + mark + '&field_id=' + field_id,
-                dataType: 'json',
-                async: false,
-                beforeSend: function() {
-
-                },
-                complete: function() {
-
-                },
-                success: function(data) {
-                }
-            });
-        }
+        });
 
     }
     else
     {
-        $('.errors').html('Не Ваш ход или Вы пытаетесь отметить выбранную клетку.');
+        $('.errors').html('Ждите хода соперника.');
     }
 
 }
@@ -150,6 +123,10 @@ function get_players() {
         },
         success: function(json) {
 
+            var move = $.cookie('move');
+            $('li[id^=step_]').css('display', 'none');
+            $('#step_' + move).css('display', 'block');
+
             if (json['current'])
             {
                 $('#' + json['current']['suid'] + ' #rival b').html(json['current']['rival_name']);
@@ -164,11 +141,12 @@ function get_players() {
                         $('.win').css('display', 'block');
                         break;
                     case 'lose':
-                        $('.lose').append('<span class="text">Поздравляю, игра окончена. Вы проиграли!</span>');
+                        $('.lose').append('<span class="text">Игра окончена. Вы проиграли!</span>');
                         $('.lose').css('display', 'block');
                         break;
                     case 'draw':
-                        $('.win').append('<span class="text">Поздравляю, игра окончена. У Вас ничья!</span>');
+                        $('.win').append('<span class="text">Игра окончена. У Вас ничья!</span>');
+                        $('.win').css('display', 'block');
                         break;
                 }
 
@@ -187,17 +165,34 @@ function get_players() {
                         $('#rival_plaeyr b').html(json['players'][key]['player']);
                         $('#confirm_' + json['players'][key]['rival_id'] + ' input[name=rival_plaeyr]').val(json['players'][key]['id']);
                         $('#confirm_' + json['players'][key]['rival_id']).css('display', 'block');
+                        
+                        $('.win').css('display', 'none');
+                        $('.lose').css('display', 'none');
                     }
 
-                    $('#players_list').append('<option value="' + json['players'][key]['id'] + '" class="' + json['players'][key]['status'] + '" data-status="' + json['players'][key]['status'] + '">' + json['players'][key]['player'] + '</option>');
+                    $('#players_list').append('<option value="' + json['players'][key]['id'] + '" class="' + json['players'][key]['status'] + '" data-status="' + json['players'][key]['status'] + '" data-game="' + json['players'][key]['game'] + '">' + json['players'][key]['player'] + '</option>');
                 }
             }
 
             if (json['table'])
             {
-                for (var key in json['table'])
-                    $('#' + key).addClass(json['table'][key]);
+                $('#game_field td').each(function (){
+                    var x = $(this).data('x');
+                    var y = $(this).data('y');
+                    
+                    if(json['table'][y] && json['table'][y][x])
+                        $(this).addClass(json['table'][y][x]);
+                    
+                });
             }
+            
+            var errors = $.cookie('errors');
+            if (errors){
+                $('.errors').html(errors);
+                $.removeCookie('errors', { path: '/' });
+                $.removeCookie('move', { path: '/' });
+            }
+                
 
         }
     });

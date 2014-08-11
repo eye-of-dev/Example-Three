@@ -92,3 +92,7 @@ dfn {
     text-align: center;
     padding-top: 15px;
 }
+
+.step li{
+    padding: 5px;
+}

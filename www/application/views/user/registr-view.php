@@ -13,7 +13,7 @@
                 <div class="container">
                     <div class="layout-box w-100">
                         <h4 class="a-center">Зарегистрироваться в игре «Крестики-нолики»!</h4>
-                        <div class="box content w-55" style="margin-left:125px;">
+                        <div class="box content w-70" style="margin-left:108px;">
                             <form action="<?php echo site_url('user/registration'); ?>" method="post" accept-charset="utf-8" role="form">
                                 <div class="f-row">
                                     <label>Логин:</label>
@@ -28,7 +28,7 @@
                                     </div>
                                 </div>
                                 <div class="f-row">
-                                    <label>Пароль:</label>
+                                    <label>Повторите пароль:</label>
                                     <div class="f-inputs">
                                         <?php echo form_password(array('name' => 'password_confirm', 'class' => 'i-login', 'value' => '')); ?>
                                     </div>

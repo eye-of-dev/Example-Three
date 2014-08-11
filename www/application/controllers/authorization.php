@@ -6,6 +6,9 @@ if (!defined('BASEPATH'))
 class Authorization extends CI_Controller
 {
 
+    private $nameSUID = 'GAME_SUID';
+    private $nameUID = 'GAME_UID';
+    
     public function __construct()
     {
         parent::__construct();
@@ -15,7 +18,17 @@ class Authorization extends CI_Controller
 
     function login()
     {
-        $this->authorization_model->login();
+        $cookieSUID = get_cookie($this->nameSUID);
+        $userID = get_cookie($this->nameUID);
+        
+        // Если нет куки - редиректим
+        if ($cookieSUID === FALSE && $userID === FALSE)
+        {
+            $this->authorization_model->login();
+        }else{
+            redirect('/');
+        }
+        
     }
 
     function logout()

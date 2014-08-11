@@ -5,7 +5,7 @@ if (!defined('BASEPATH'))
 
 class Main extends CI_Controller
 {
-    
+
     public function __construct()
     {
         parent::__construct();
@@ -14,7 +14,7 @@ class Main extends CI_Controller
 
         $this->load->model('authorization_model');
         $this->authorization_model->check();
-        
+
         $this->lang->load('main', get_cookie('language'));
     }
 
@@ -39,7 +39,11 @@ class Main extends CI_Controller
         $date['received'] = $this->lang->line('received');
         $date['agree'] = $this->lang->line('agree');
         $date['lang'] = $this->lang->line('lang');
-        
+
+        $date['step_0'] = $this->lang->line('step_0');
+        $date['step_1'] = $this->lang->line('step_1');
+        $date['step_2'] = $this->lang->line('step_2');
+
         $date['login'] = $this->authorization_model->profile->login;
         $date['suid'] = get_cookie('GAME_SUID');
         $date['uid'] = get_cookie('GAME_UID');
@@ -47,10 +51,10 @@ class Main extends CI_Controller
         $date['errors'] = get_cookie('errors');
         $date['rival_id'] = get_cookie('rival_id');
         $date['language'] = get_cookie('language');
-        
+
         delete_cookie('errors');
         delete_cookie('rival_id');
-        
+
         $this->load->view('main', $date);
     }
 
@@ -59,15 +63,9 @@ class Main extends CI_Controller
         $data = array();
 
         $uid = $this->input->post('uid');
-        $mark = $this->input->post('mark');
-        $field_id = $this->input->post('field_id');
 
         // Вносим изменения в основной файл игры
-        $game = get_cookie('game');
-        $data = file_get_contents(FCPATH . 'data/' . $game);
-        $data = unserialize($data);
-        $data[$field_id] = $mark;
-        file_put_contents(FCPATH . 'data/' . $game, serialize($data));
+        $this->changeFileGame();
 
         // Вносим изменения в файл ходов
         $step = get_cookie('step');
@@ -83,6 +81,7 @@ class Main extends CI_Controller
 
     /**
      * Отправка согласия на игру
+     * @return void
      */
     public function confirmGame()
     {
@@ -96,41 +95,33 @@ class Main extends CI_Controller
         $results = simplexml_load_file(base_url('data/players.xml'));
         $player = $results->xpath('//player[@id="' . $this->input->post('current_plaeyr') . '"]');
 
-        foreach ($player as $value)
+        $dom = dom_import_simplexml($player[0]);
+        foreach ($player[0]->attributes() as $attr => $value)
         {
-            $dom = dom_import_simplexml($value);
-            $dom->removeAttribute('status');
-            $dom->removeAttribute('rival_id');
-            $dom->removeAttribute('rival_name');
-            $dom->removeAttribute('game');
-            $dom->removeAttribute('mark');
-            $dom->removeAttribute('result');
+            $this->setAttribute($dom, $attr);
         }
 
         $rival_data = $this->user_model->getUserById($this->input->post('rival_plaeyr'));
 
-        $player['0']->addAttribute('status', 'busy');
-        $player['0']->addAttribute('rival_id', $this->input->post('rival_plaeyr'));
-        $player['0']->addAttribute('rival_name', $rival_data->login);
-        $player['0']->addAttribute('game', $game);
-        $player['0']->addAttribute('mark', 'circle');
-        $player['0']->addAttribute('result', '');
+        $this->setAttribute($dom, 'status', 'busy');
+        $this->setAttribute($dom, 'rival_id', $this->input->post('rival_plaeyr'));
+        $this->setAttribute($dom, 'rival_name', $rival_data->login);
+        $this->setAttribute($dom, 'game', $game);
+        $this->setAttribute($dom, 'mark', 'circle');
 
         set_cookie('mark', 'circle', '2678400');
         set_cookie('game', $game, '2678400');
         set_cookie('step', $step, '2678400');
         set_cookie('move', '0', '2678400');
         set_cookie('rival_id', $this->input->post('rival_plaeyr'), '2678400');
-        
+
         $player = $results->xpath('//player[@id="' . $this->input->post('rival_plaeyr') . '"]');
 
-        foreach ($player as $value)
-        {
-            $dom = dom_import_simplexml($value);
-            $dom->removeAttribute('game');
-        }
+        $dom = dom_import_simplexml($player[0]);
+        $this->setAttribute($dom, 'game', $game);
 
-        $player['0']->addAttribute('game', $game);
+        // Вносим изменения в файл игры
+        $this->changeFileStep($step, $this->input->post('rival_plaeyr'));
 
         $results->asXML(FCPATH . 'data/players.xml');
 
@@ -139,6 +130,7 @@ class Main extends CI_Controller
 
     /**
      * Предложить игру
+     * @return void
      */
     public function letsPlay()
     {
@@ -146,14 +138,10 @@ class Main extends CI_Controller
         $results = simplexml_load_file(base_url('data/players.xml'));
         $player = $results->xpath('//player[@id="' . $this->authorization_model->profile->id . '"]');
 
-        foreach ($player as $value)
+        $dom = dom_import_simplexml($player[0]);
+        foreach ($player[0]->attributes() as $attr => $value)
         {
-            $dom = dom_import_simplexml($value);
-            $dom->removeAttribute('status');
-            $dom->removeAttribute('rival_id');
-            $dom->removeAttribute('rival_name');
-            $dom->removeAttribute('mark');
-            $dom->removeAttribute('result');
+            $this->setAttribute($dom, $attr);
         }
 
         $game = 'game_' . $this->input->post('players_list') . 'x' . $this->authorization_model->profile->id;
@@ -165,7 +153,7 @@ class Main extends CI_Controller
 
         $fp = fopen(FCPATH . 'data/' . $step, 'w');
 
-        $data[$this->authorization_model->profile->id] = '1';
+        $data[$this->authorization_model->profile->id] = '2';
         $data[$this->input->post('players_list')] = '0';
 
         fwrite($fp, serialize($data));
@@ -173,25 +161,24 @@ class Main extends CI_Controller
 
         $rival_data = $this->user_model->getUserById($this->input->post('players_list'));
 
-        $player['0']->addAttribute('status', 'busy');
-        $player['0']->addAttribute('rival_id', $this->input->post('players_list'));
-        $player['0']->addAttribute('rival_name', $rival_data->login);
-        $player['0']->addAttribute('mark', 'cross');
-        $player['0']->addAttribute('result', '');
+        $this->setAttribute($dom, 'status', 'busy');
+        $this->setAttribute($dom, 'rival_id', $this->input->post('players_list'));
+        $this->setAttribute($dom, 'rival_name', $rival_data->login);
+        $this->setAttribute($dom, 'mark', 'cross');
 
         $player = $results->xpath('//player[@id="' . $this->input->post('players_list') . '"]');
-        
-        if( ! $player)
+
+        if (!$player)
         {
             set_cookie('errors', $this->lang->line('out'), '2678400');
         }
-        
+
         $results->asXML(FCPATH . 'data/players.xml');
 
         set_cookie('mark', 'cross', '2678400');
         set_cookie('game', $game, '2678400');
         set_cookie('step', $step, '2678400');
-        set_cookie('move', '1', '2678400');
+        set_cookie('move', '0', '2678400');
         set_cookie('rival_id', $this->input->post('players_list'), '2678400');
 
         redirect('/');
@@ -238,6 +225,11 @@ class Main extends CI_Controller
                         $data['current']['game'] = ( string ) $attribute['game'];
                         $data['current']['suid'] = ( string ) $attribute['suid'];
                         $data['current']['result'] = ( string ) $attribute['result'];
+
+                        // Проверка соперника в игре или нет
+                        $this->checkRival($data['current']);
+
+                        set_cookie('game', ( string ) $attribute['game'], '2678400');
                     }
                 }
             }
@@ -264,90 +256,330 @@ class Main extends CI_Controller
         $this->output->set_output(json_encode($data));
     }
 
-    public function gameOver()
+    /**
+     * Игра окончена
+     * @param int $uid Идентификатор игрока
+     * @param string $draw Маркер ничьи
+     * @return void
+     */
+    private function gameOver($uid, $draw = NULL)
     {
-        $rival_id = 0;
-
-        $uid = $this->input->post('uid');
-
         $results = simplexml_load_file(base_url('data/players.xml'));
-        $player = $results->xpath('//player[@id="' . $this->authorization_model->profile->id . '"]');
+        $player = $results->xpath('//player[@id="' . $uid . '"]');
+        $dom = dom_import_simplexml($player[0]);
 
-        foreach ($player as $value)
+        $rival_id = ($dom->getAttribute('rival_id')) ? $dom->getAttribute('rival_id') : 0;
+
+        foreach ($player[0]->attributes() as $attr => $value)
         {
-            $dom = dom_import_simplexml($value);
-            $rival_id = $dom->getAttribute('rival_id');
-            
-            $dom->removeAttribute('result');
-            $dom->removeAttribute('status');
-            $dom->removeAttribute('rival_name');
-            $dom->removeAttribute('mark');
-            $dom->removeAttribute('game');
-            $dom->removeAttribute('rival_id');
+            $this->setAttribute($dom, $attr);
         }
-        
-        $player['0']->addAttribute('rival_id', '');
-        $player['0']->addAttribute('rival_name', '');
-        $player['0']->addAttribute('mark', '');
-        $player['0']->addAttribute('game', '');
-        $player['0']->addAttribute('status', 'free');
-        $player['0']->addAttribute('result', 'win');
+
+        $this->setAttribute($dom, 'status', 'free');
+        $this->setAttribute($dom, 'result', ($draw) ? $draw : 'win');
 
         $player = $results->xpath('//player[@id="' . $rival_id . '"]');
-        foreach ($player as $value)
+        $dom = dom_import_simplexml($player[0]);
+
+        foreach ($player[0]->attributes() as $attr => $value)
         {
-            $dom = dom_import_simplexml($value);
-            $dom->removeAttribute('result');
-            $dom->removeAttribute('status');
-            $dom->removeAttribute('rival_name');
-            $dom->removeAttribute('mark');
-            $dom->removeAttribute('game');
-            $dom->removeAttribute('rival_id');
+            $this->setAttribute($dom, $attr);
         }
-        
-        $player['0']->addAttribute('rival_id', '');
-        $player['0']->addAttribute('rival_name', '');
-        $player['0']->addAttribute('mark', '');
-        $player['0']->addAttribute('game', '');
-        $player['0']->addAttribute('status', 'free');
-        $player['0']->addAttribute('result', 'lose');
+
+        $this->setAttribute($dom, 'status', 'free');
+        $this->setAttribute($dom, 'result', ($draw) ? $draw : 'lose');
 
         $results->asXML(FCPATH . 'data/players.xml');
 
-        $mark = $this->input->post('mark');
-        $field_id = $this->input->post('field_id');
-
-        // Вносим изменения в основной файл игры
-        $game = get_cookie('game');
-        $data = file_get_contents(FCPATH . 'data/' . $game);
-        $data = unserialize($data);
-        $data[$field_id] = $mark;
-        file_put_contents(FCPATH . 'data/' . $game, serialize($data));
-        
-        // Вносим изменения в файл ходов
-        $step = get_cookie('step');
-        $data = file_get_contents(FCPATH . 'data/' . $step);
-        $data = unserialize($data);
-        foreach ($data as $key => $value)
-        {
-            $data[$key] = '0';
-        }
-        file_put_contents(FCPATH . 'data/' . $step, serialize($data));
-        
         delete_cookie('game');
         delete_cookie('mark');
         delete_cookie('step');
         delete_cookie('move');
-
     }
 
+    /**
+     * Смена языка
+     * @return void
+     */
     public function switchLang()
     {
         set_cookie('language', $this->input->post('language'), '2678400');
         redirect('/');
     }
-    
+
+    /**
+     * Удаляем атрибут
+     * @param object $dom Объект XML
+     * @param string $attr Атрибут
+     * @param string $val Значение
+     * @return void
+     */
+    private function setAttribute($dom, $attr, $val = '')
+    {
+
+        if ($attr != 'id' && $attr != 'suid')
+        {
+            $dom->setAttribute($attr, $val);
+        }
+    }
+
+    /**
+     * Вносим изменения в основной файл игры
+     * @return void
+     */
+    private function changeFileGame()
+    {
+
+        $mark = $this->input->post('mark');
+        $field_id = $this->input->post('field_id');
+        $x = $this->input->post('x');
+        $y = $this->input->post('y');
+
+        $game = get_cookie('game');
+        $data = file_get_contents(FCPATH . 'data/' . $game);
+        $data = unserialize($data);
+
+        $data[$y][$x] = $mark;
+
+        file_put_contents(FCPATH . 'data/' . $game, serialize($data));
+
+        $this->checkGameResult($data);
+    }
+
+    /**
+     * Вносим изменения в файл ходов
+     * @param string $file Файл ходов
+     * @param int $uid Идентификатор игрока
+     * @return void
+     */
+    private function changeFileStep($file, $uid = NULL)
+    {
+        $data = file_get_contents(FCPATH . 'data/' . $file);
+        $data = unserialize($data);
+        foreach ($data as $key => $value)
+        {
+            if ($uid == $key)
+            {
+                $data[$key] = '1';
+            }
+            else
+            {
+                $data[$key] = '0';
+            }
+        }
+
+        file_put_contents(FCPATH . 'data/' . $file, serialize($data));
+    }
+
+    /**
+     * Функция вычисления выигрыша
+     * @param array $data Массив крестики-нолики
+     */
+    private function checkGameResult($data)
+    {
+        $uid = $this->input->post('uid');
+        $mark = $this->input->post('mark');
+
+        foreach ($data as $y => $yvalue)
+        {
+            // Проверка выигрыша по горизонтали
+            $cross = 0;
+            $circle = 0;
+            foreach ($yvalue as $x => $xvalue)
+            {
+                if ($xvalue === 'cross')
+                {
+                    $cross++;
+                }
+                elseif ($xvalue === 'circle')
+                {
+                    $circle++;
+                }
+            }
+
+            if ($cross > 2 || $circle > 2)
+            {
+                $this->gameOver($uid);
+                continue;
+            }
+        }
+
+        // Проверка выигрышной комбинации по вуртикали
+        foreach ($data as $y => $yvalue)
+        {
+            foreach ($yvalue as $x => $xvalue)
+            {
+                $cross = 0;
+                $circle = 0;
+                if (isset($data[$y][$x]) && $data[$y][$x] === 'cross')
+                {
+                    $cross++;
+                }
+                elseif (isset($data[$y][$x]) && $data[$y][$x] === 'circle')
+                {
+                    $circle++;
+                }
+                if (isset($data[$y + 1][$x]) && $data[$y + 1][$x] === 'cross')
+                {
+                    $cross++;
+                }
+                elseif (isset($data[$y + 1][$x]) && $data[$y + 1][$x] === 'circle')
+                {
+                    $circle++;
+                }
+                if (isset($data[$y + 2][$x]) && $data[$y + 2][$x] === 'cross')
+                {
+                    $cross++;
+                }
+                elseif (isset($data[$y + 2][$x]) && $data[$y + 2][$x] === 'circle')
+                {
+                    $circle++;
+                }
+
+                if ($cross > 2 || $circle > 2)
+                {
+                    $this->gameOver($uid);
+                    continue;
+                }
+            }
+        }
+
+
+
+        $cross = 0;
+        $circle = 0;
+        // Проверка выигрышной комбинации по горизонтали слева направо
+        foreach ($data as $y => $yvalue)
+        {
+            if (isset($data[$y][$y]) && $data[$y][$y] === 'cross')
+            {
+                $cross++;
+            }
+            elseif (isset($data[$y][$y]) && $data[$y][$y] === 'circle')
+            {
+                $circle++;
+            }
+        }
+
+        if ($cross > 2 || $circle > 2)
+        {
+            $this->gameOver($uid);
+        }
+
+        // Проверка выигрышной комбинации по горизонтали справа налево
+        // т.к. достаточно только 3 совпадения, то и ищем минимум 3 совпадения
+        foreach ($data as $y => $yvalue)
+        {
+            foreach ($yvalue as $x => $xvalue)
+            {
+                $cross = 0;
+                $circle = 0;
+                if (isset($data[$y][$x]) && $data[$y][$x] === 'cross')
+                {
+                    $cross++;
+                }
+                elseif (isset($data[$y][$x]) && $data[$y][$x] === 'circle')
+                {
+                    $circle++;
+                }
+                if (isset($data[$y + 1][$x - 1]) && $data[$y + 1][$x - 1] === 'cross')
+                {
+                    $cross++;
+                }
+                elseif (isset($data[$y + 1][$x - 1]) && $data[$y + 1][$x - 1] === 'circle')
+                {
+                    $circle++;
+                }
+                if (isset($data[$y + 2][$x - 2]) && $data[$y + 2][$x - 2] === 'cross')
+                {
+                    $cross++;
+                }
+                elseif (isset($data[$y + 2][$x - 2]) && $data[$y + 2][$x - 2] === 'circle')
+                {
+                    $circle++;
+                }
+            }
+
+            if ($cross > 2 || $circle > 2)
+            {
+                $this->gameOver($uid);
+                continue;
+            }
+        }
+
+        // Проверка на ничью
+        $counter = 0;
+        foreach ($data as $y => $yvalue)
+        {
+            foreach ($yvalue as $x => $xvalue)
+            {
+                $counter++;
+            }
+        }
+
+        if ($counter === 9)
+        {
+            $this->gameOver($uid, 'draw');
+        }
+    }
+
+    /**
+     * Проверка соперника в игре или нет
+     * @param array $data Массив данных игрока
+     */
+    private function checkRival($data)
+    {
+
+        if ($data['status'] === 'busy' && $data['game'])
+        {
+            $results = simplexml_load_file(base_url('data/players.xml'));
+
+            $player = $results->xpath('//player[@id="' . $data['rival_id'] . '"]');
+
+            if (!$player)
+            {
+                $player = $results->xpath('//player[@id="' . $data['id'] . '"]');
+
+                $dom = dom_import_simplexml($player[0]);
+                foreach ($player[0]->attributes() as $attr => $value)
+                {
+                    $this->setAttribute($dom, $attr);
+                }
+
+                $this->setAttribute($dom, 'status', 'free');
+
+                $results->asXML(FCPATH . 'data/players.xml');
+
+                set_cookie('errors', $this->lang->line('out'), '2678400');
+            }
+        }
+    }
+
+    public function deleteplayer()
+    {
+        
+        
+        $results = simplexml_load_file(base_url('data/players.xml'));
+        $player = $results->xpath('//player[@id="' . $this->input->post('uid') . '"]');
+
+        foreach ($player as $child)
+        {
+            $dom = dom_import_simplexml($child);
+            $dom->parentNode->removeChild($dom);
+        }
+        $results->asXML(FCPATH . 'data/players.xml');
+
+        // Очищаем основные cookie
+        delete_cookie($this->nameSUID);
+        delete_cookie($this->nameUID);
+        delete_cookie('game');
+        delete_cookie('mark');
+        delete_cookie('step');
+        delete_cookie('players');
+        delete_cookie('move');
+    }
+
 }
 
-/* End of file welcome.php */
-/* Location: ./application/controllers/welcome.php */
+/* End of file main.php */
+/* Location: ./application/controllers/main.php */

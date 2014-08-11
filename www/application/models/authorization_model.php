@@ -28,8 +28,6 @@ class Authorization_model extends CI_Model
         // Формируем урл страницы миграции для сверки
         $migrateURL = site_url('migrate/update');
 
-
-
         // Если это авторизация или миграция - пропускаем
         if ($currentURL === $baseURL OR $currentURL === $migrateURL)
         {
