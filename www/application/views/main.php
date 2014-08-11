@@ -8,7 +8,7 @@
         <script src="<?php echo base_url('js/script.js') ?>"></script>
         <link href="<?php echo base_url('css/main.css') ?>" rel="stylesheet">
     </head>
-    <body onUnLoad="alert('окно закрывается!')">
+    <body>
         <div id="container">
             <h1><?php echo $title; ?></h1>
             <div id="body">
