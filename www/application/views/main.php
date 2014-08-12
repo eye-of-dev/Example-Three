@@ -19,7 +19,7 @@
                         <li id="step_1" style="display: none;"><?php echo $step_1; ?></li>
                         <li id="step_2" style="display: none;"><?php echo $step_2; ?></li>
                     </ul>
-                    <table id="game_field">
+                    <table id="game_field" data-width="3" data-height="3">
                         <tr>
                             <td class="" data-x="1" data-y="1" id="field_1" data-field="field_1" onclick="letsStep('<?php print $uid; ?>', '<?php print $mark; ?>', 'field_1', '1', '1')"></td>
                             <td class="" data-x="2" data-y="1" id="field_2" data-field="field_2" onclick="letsStep('<?php print $uid; ?>', '<?php print $mark; ?>', 'field_2', '2', '1')"></td>

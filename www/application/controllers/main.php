@@ -5,6 +5,8 @@ if (!defined('BASEPATH'))
 
 class Main extends CI_Controller
 {
+    
+    private $lenthWinComb = 3; // Длина выигрышной комбинации
 
     public function __construct()
     {
@@ -20,6 +22,7 @@ class Main extends CI_Controller
 
     /**
      * Точка входа в контролер
+     * @return void
      */
     public function index()
     {
@@ -57,7 +60,11 @@ class Main extends CI_Controller
 
         $this->load->view('main', $date);
     }
-
+    
+    /**
+     * Ход
+     * @return void
+     */
     public function letsStep()
     {
         $data = array();
@@ -380,35 +387,46 @@ class Main extends CI_Controller
         $uid = $this->input->post('uid');
         $mark = $this->input->post('mark');
 
-        foreach ($data as $y => $yvalue)
+        $cross = 0;
+        $circle = 0;
+        // Проверка выигрыша по горизонтали
+        foreach ($data as $key => $value)
         {
-            // Проверка выигрыша по горизонтали
-            $cross = 0;
-            $circle = 0;
-            foreach ($yvalue as $x => $xvalue)
-            {
-                if ($xvalue === 'cross')
-                {
-                    $cross++;
-                }
-                elseif ($xvalue === 'circle')
-                {
-                    $circle++;
-                }
-            }
-
-            if ($cross > 2 || $circle > 2)
+            extract(array_count_values($value)); 
+            
+            if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
             {
                 $this->gameOver($uid);
                 continue;
             }
         }
 
+        $cross = 0;
+        $circle = 0;
+        // Проверка выигрышной комбинации по горизонтали слева направо
+        foreach ($data as $y => $yvalue)
+        {
+            if (isset($data[$y][$y]) && $data[$y][$y] === 'cross')
+            {
+                $cross++;
+            }
+            elseif (isset($data[$y][$y]) && $data[$y][$y] === 'circle')
+            {
+                $circle++;
+            }
+        }
+
+        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
+        {
+            $this->gameOver($uid);
+        }
+        
         // Проверка выигрышной комбинации по вуртикали
         foreach ($data as $y => $yvalue)
         {
             foreach ($yvalue as $x => $xvalue)
             {
+
                 $cross = 0;
                 $circle = 0;
                 if (isset($data[$y][$x]) && $data[$y][$x] === 'cross')
@@ -435,37 +453,15 @@ class Main extends CI_Controller
                 {
                     $circle++;
                 }
-
-                if ($cross > 2 || $circle > 2)
-                {
-                    $this->gameOver($uid);
-                    continue;
-                }
             }
-        }
-
-
-
-        $cross = 0;
-        $circle = 0;
-        // Проверка выигрышной комбинации по горизонтали слева направо
-        foreach ($data as $y => $yvalue)
-        {
-            if (isset($data[$y][$y]) && $data[$y][$y] === 'cross')
+            
+            if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
             {
-                $cross++;
+                $this->gameOver($uid);
+                continue;
             }
-            elseif (isset($data[$y][$y]) && $data[$y][$y] === 'circle')
-            {
-                $circle++;
-            }
+            
         }
-
-        if ($cross > 2 || $circle > 2)
-        {
-            $this->gameOver($uid);
-        }
-
         // Проверка выигрышной комбинации по горизонтали справа налево
         // т.к. достаточно только 3 совпадения, то и ищем минимум 3 совпадения
         foreach ($data as $y => $yvalue)
