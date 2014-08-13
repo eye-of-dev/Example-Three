@@ -7,7 +7,9 @@ class Main extends CI_Controller
 {
     
     private $lenthWinComb = 3; // Длина выигрышной комбинации
-
+    private $height = 3; // Длина игрового поля
+    private $width = 3; // Ширина игрового поля
+    
     public function __construct()
     {
         parent::__construct();
@@ -42,6 +44,8 @@ class Main extends CI_Controller
         $date['received'] = $this->lang->line('received');
         $date['agree'] = $this->lang->line('agree');
         $date['lang'] = $this->lang->line('lang');
+        $date['comb'] = $this->lang->line('comb');
+        $date['status'] = $this->lang->line('status');
 
         $date['step_0'] = $this->lang->line('step_0');
         $date['step_1'] = $this->lang->line('step_1');
@@ -58,6 +62,10 @@ class Main extends CI_Controller
         delete_cookie('errors');
         delete_cookie('rival_id');
 
+        $date['lenthWinComb'] = $this->lenthWinComb;
+        $date['height'] = $this->height;
+        $date['width'] = $this->width;
+        
         $this->load->view('main', $date);
     }
     
@@ -95,6 +103,17 @@ class Main extends CI_Controller
         $game = 'game_' . $this->input->post('current_plaeyr') . 'x' . $this->input->post('rival_plaeyr');
 
         $fp = fopen(FCPATH . 'data/' . $game, 'w');
+        
+        $data = array();
+        for ($y = 0; $y < $this->width; $y++)
+        {
+            for ($x = 0; $x < $this->height; $x++)
+            {
+                $data[$y][$x] = '';
+            }
+        }
+        
+        fwrite($fp, serialize($data));
         fclose($fp);
 
         $step = 'step_' . $this->input->post('current_plaeyr') . 'x' . $this->input->post('rival_plaeyr');
@@ -387,133 +406,87 @@ class Main extends CI_Controller
         $uid = $this->input->post('uid');
         $mark = $this->input->post('mark');
 
-        $cross = 0;
-        $circle = 0;
         // Проверка выигрыша по горизонтали
-        foreach ($data as $key => $value)
-        {
-            extract(array_count_values($value)); 
-            
-            if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
-            {
-                $this->gameOver($uid);
-                continue;
-            }
-        }
-
-        $cross = 0;
-        $circle = 0;
-        // Проверка выигрышной комбинации по горизонтали слева направо
-        foreach ($data as $y => $yvalue)
-        {
-            if (isset($data[$y][$y]) && $data[$y][$y] === 'cross')
-            {
-                $cross++;
-            }
-            elseif (isset($data[$y][$y]) && $data[$y][$y] === 'circle')
-            {
-                $circle++;
-            }
-        }
+        $sArray = json_encode($data);
+        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
+            $cross = $this->lenthWinComb;
+        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
+            $circle = $this->lenthWinComb;
 
         if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
         {
             $this->gameOver($uid);
         }
         
-        // Проверка выигрышной комбинации по вуртикали
+        // Проверка выигрышной комбинации по горизонтали слева направо
+        foreach ($data as $y => $yvalue)
+        {
+            $tmpArray[$y] = $data[$y][$y];
+        }
+
+        $sArray = json_encode($tmpArray);
+        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
+            $cross = $this->lenthWinComb;
+        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
+            $circle = $this->lenthWinComb;
+
+        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
+        {
+            $this->gameOver($uid);
+        }
+
+        $tmpArray = array(); 
+        // Проверка выигрышной комбинации по вeртикали
         foreach ($data as $y => $yvalue)
         {
             foreach ($yvalue as $x => $xvalue)
             {
-
-                $cross = 0;
-                $circle = 0;
-                if (isset($data[$y][$x]) && $data[$y][$x] === 'cross')
-                {
-                    $cross++;
-                }
-                elseif (isset($data[$y][$x]) && $data[$y][$x] === 'circle')
-                {
-                    $circle++;
-                }
-                if (isset($data[$y + 1][$x]) && $data[$y + 1][$x] === 'cross')
-                {
-                    $cross++;
-                }
-                elseif (isset($data[$y + 1][$x]) && $data[$y + 1][$x] === 'circle')
-                {
-                    $circle++;
-                }
-                if (isset($data[$y + 2][$x]) && $data[$y + 2][$x] === 'cross')
-                {
-                    $cross++;
-                }
-                elseif (isset($data[$y + 2][$x]) && $data[$y + 2][$x] === 'circle')
-                {
-                    $circle++;
+                if($xvalue){
+                    $tmpArray[$x][$y] = $xvalue;
                 }
             }
-            
-            if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
-            {
-                $this->gameOver($uid);
-                continue;
-            }
-            
         }
+        
+        $sArray = json_encode($tmpArray);
+        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
+            $cross = $this->lenthWinComb;
+        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
+            $circle = $this->lenthWinComb;
+
+        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
+        {
+            $this->gameOver($uid);
+        }
+
         // Проверка выигрышной комбинации по горизонтали справа налево
-        // т.к. достаточно только 3 совпадения, то и ищем минимум 3 совпадения
-        foreach ($data as $y => $yvalue)
+        $tmpArray = array(); 
+        for ($y = 0; $y < count($data); $y++)
         {
-            foreach ($yvalue as $x => $xvalue)
-            {
-                $cross = 0;
-                $circle = 0;
-                if (isset($data[$y][$x]) && $data[$y][$x] === 'cross')
-                {
-                    $cross++;
-                }
-                elseif (isset($data[$y][$x]) && $data[$y][$x] === 'circle')
-                {
-                    $circle++;
-                }
-                if (isset($data[$y + 1][$x - 1]) && $data[$y + 1][$x - 1] === 'cross')
-                {
-                    $cross++;
-                }
-                elseif (isset($data[$y + 1][$x - 1]) && $data[$y + 1][$x - 1] === 'circle')
-                {
-                    $circle++;
-                }
-                if (isset($data[$y + 2][$x - 2]) && $data[$y + 2][$x - 2] === 'cross')
-                {
-                    $cross++;
-                }
-                elseif (isset($data[$y + 2][$x - 2]) && $data[$y + 2][$x - 2] === 'circle')
-                {
-                    $circle++;
-                }
-            }
-
-            if ($cross > 2 || $circle > 2)
-            {
-                $this->gameOver($uid);
-                continue;
-            }
+            $tmpArray[$y] = $data[$y][count($data) - ($y + 1)];
         }
-
+        
+        $sArray = json_encode($tmpArray);
+        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
+            $cross = $this->lenthWinComb;
+        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
+            $circle = $this->lenthWinComb;
+        
+        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
+        {
+            $this->gameOver($uid);
+        }        
         // Проверка на ничью
         $counter = 0;
         foreach ($data as $y => $yvalue)
         {
             foreach ($yvalue as $x => $xvalue)
             {
-                $counter++;
+                if($xvalue)
+                    $counter++;
             }
         }
 
-        if ($counter === 9)
+        if ($counter === $this->height * $this->width)
         {
             $this->gameOver($uid, 'draw');
         }

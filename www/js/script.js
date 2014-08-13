@@ -100,7 +100,6 @@ function get_players() {
         type: 'POST',
         url: 'main/getgame',
         dataType: 'json',
-        async: false,
         beforeSend: function() {
 
         },
@@ -111,7 +110,7 @@ function get_players() {
 
             var move = $.cookie('move');
             $('li[id^=step_]').css('display', 'none');
-            $('#step_' + move).css('display', 'block');
+            $('#step_' + move).css('display', 'inline-block');
 
             if (json['current'])
             {

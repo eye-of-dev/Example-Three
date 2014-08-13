@@ -14,6 +14,8 @@ $lang['received'] = "Received a proposal from:";
 $lang['agree'] = "Agree on the game";
 $lang['out'] = "Player out of the game.";
 $lang['lang'] = "Switch language:";
+$lang['comb'] = "Combination:";
+$lang['status'] = "Status:";
 
 $lang['step_0'] = "Opponent move";
 $lang['step_1'] = "Your move";
