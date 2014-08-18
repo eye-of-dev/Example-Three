@@ -107,19 +107,19 @@ class Authorization_model extends CI_Model
                 $player->addAttribute('suid', $SUID);
                 $player->addAttribute('mark', '');
                 $player->addAttribute('result', '');
+                $player->addAttribute('comment', '');
                 $results->asXML(FCPATH . 'data/players.xml');
 
                 // Добавляем куки
                 set_cookie($this->nameSUID, $SUID, $this->cookieTIME);
                 set_cookie($this->nameUID, $this->profile->id, $this->cookieTIME);
-                set_cookie('language', $this->config->item('language'), $this->cookieTIME);
+                
+                set_cookie('language', (get_cookie('language')) ? get_cookie('language') : $this->config->item('language'), $this->cookieTIME);
                 
                 redirect('/');
             }
-            $this->log_model->error('Введен некорректный логин или пароль!');
+            return $this->lang->line('error_login');
         }
-
-        $this->load->view('user/login-view');
     }
 
     public function logout()

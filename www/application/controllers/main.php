@@ -43,9 +43,19 @@ class Main extends CI_Controller
         $date['again'] = $this->lang->line('again');
         $date['received'] = $this->lang->line('received');
         $date['agree'] = $this->lang->line('agree');
+        $date['cansel'] = $this->lang->line('cansel');
         $date['lang'] = $this->lang->line('lang');
         $date['comb'] = $this->lang->line('comb');
         $date['status'] = $this->lang->line('status');
+        $date['player_win'] = $this->lang->line('player_win');
+        $date['player_lose'] = $this->lang->line('player_lose');
+        $date['player_draw'] = $this->lang->line('player_draw');
+        $date['busy'] = $this->lang->line('busy');
+        $date['in_game'] = $this->lang->line('in_game');
+        $date['recall'] = $this->lang->line('recall');
+        $date['not_selected'] = $this->lang->line('not_selected');
+        $date['wait'] = $this->lang->line('wait');
+        $date['selected_cell'] = $this->lang->line('selected_cell');
 
         $date['step_0'] = $this->lang->line('step_0');
         $date['step_1'] = $this->lang->line('step_1');
@@ -100,7 +110,7 @@ class Main extends CI_Controller
      */
     public function confirmGame()
     {
-        $game = 'game_' . $this->input->post('current_plaeyr') . 'x' . $this->input->post('rival_plaeyr');
+        $game = 'game_' . $this->input->post('current_plaeyr') . 'x' . $this->input->post('rival_player');
 
         $fp = fopen(FCPATH . 'data/' . $game, 'w');
         
@@ -116,7 +126,7 @@ class Main extends CI_Controller
         fwrite($fp, serialize($data));
         fclose($fp);
 
-        $step = 'step_' . $this->input->post('current_plaeyr') . 'x' . $this->input->post('rival_plaeyr');
+        $step = 'step_' . $this->input->post('current_plaeyr') . 'x' . $this->input->post('rival_player');
 
         $results = simplexml_load_file(base_url('data/players.xml'));
         $player = $results->xpath('//player[@id="' . $this->input->post('current_plaeyr') . '"]');
@@ -127,10 +137,10 @@ class Main extends CI_Controller
             $this->setAttribute($dom, $attr);
         }
 
-        $rival_data = $this->user_model->getUserById($this->input->post('rival_plaeyr'));
+        $rival_data = $this->user_model->getUserById($this->input->post('rival_player'));
 
         $this->setAttribute($dom, 'status', 'busy');
-        $this->setAttribute($dom, 'rival_id', $this->input->post('rival_plaeyr'));
+        $this->setAttribute($dom, 'rival_id', $this->input->post('rival_player'));
         $this->setAttribute($dom, 'rival_name', $rival_data->login);
         $this->setAttribute($dom, 'game', $game);
         $this->setAttribute($dom, 'mark', 'circle');
@@ -139,19 +149,53 @@ class Main extends CI_Controller
         set_cookie('game', $game, '2678400');
         set_cookie('step', $step, '2678400');
         set_cookie('move', '0', '2678400');
-        set_cookie('rival_id', $this->input->post('rival_plaeyr'), '2678400');
+        set_cookie('rival_id', $this->input->post('rival_player'), '2678400');
 
-        $player = $results->xpath('//player[@id="' . $this->input->post('rival_plaeyr') . '"]');
+        $player = $results->xpath('//player[@id="' . $this->input->post('rival_player') . '"]');
 
         $dom = dom_import_simplexml($player[0]);
         $this->setAttribute($dom, 'game', $game);
 
         // Вносим изменения в файл игры
-        $this->changeFileStep($step, $this->input->post('rival_plaeyr'));
+        $this->changeFileStep($step, $this->input->post('rival_player'));
 
         $results->asXML(FCPATH . 'data/players.xml');
 
         redirect('/');
+    }
+
+    /**
+     * Возможность отказаться от игры
+     * @return void
+     */
+    public function canselgame(){
+        
+        $results = simplexml_load_file(base_url('data/players.xml'));
+        $player = $results->xpath('//player[@id="' . $this->input->post('current_plaeyr') . '"]');
+
+        $dom = dom_import_simplexml($player[0]);
+        foreach ($player[0]->attributes() as $attr => $value)
+        {
+            $this->setAttribute($dom, $attr);
+        }
+        
+        $this->setAttribute($dom, 'status', 'free');
+        
+        $player = $results->xpath('//player[@id="' . $this->input->post('rival_player') . '"]');
+        
+        $dom = dom_import_simplexml($player[0]);
+        foreach ($player[0]->attributes() as $attr => $value)
+        {
+            $this->setAttribute($dom, $attr);
+        }
+        
+        $this->setAttribute($dom, 'status', 'free');
+        $this->setAttribute($dom, 'comment', 'cansel_game');
+        
+        $results->asXML(FCPATH . 'data/players.xml');
+
+        redirect('/');
+        
     }
 
     /**
@@ -205,6 +249,7 @@ class Main extends CI_Controller
         set_cookie('game', $game, '2678400');
         set_cookie('step', $step, '2678400');
         set_cookie('move', '0', '2678400');
+        set_cookie('recall', '1', '2678400');
         set_cookie('rival_id', $this->input->post('players_list'), '2678400');
 
         redirect('/');
@@ -221,7 +266,7 @@ class Main extends CI_Controller
 
         $results = simplexml_load_file(base_url('data/players.xml'));
 
-        if ($results && md5(file_get_contents(FCPATH . 'data/players.xml')) != get_cookie('players'))
+        if ($results)
         {
             foreach ($results->xpath('//player') as $player)
             {
@@ -240,6 +285,7 @@ class Main extends CI_Controller
                         $data['players'][$attribute['id']]['game'] = ( string ) $attribute['game'];
                         $data['players'][$attribute['id']]['suid'] = ( string ) $attribute['suid'];
                         $data['players'][$attribute['id']]['result'] = ( string ) $attribute['result'];
+                        $data['players'][$attribute['id']]['comment'] = $this->lang->line(( string ) $attribute['comment']);
                     }
                     else
                     {
@@ -251,6 +297,7 @@ class Main extends CI_Controller
                         $data['current']['game'] = ( string ) $attribute['game'];
                         $data['current']['suid'] = ( string ) $attribute['suid'];
                         $data['current']['result'] = ( string ) $attribute['result'];
+                        $data['current']['comment'] = $this->lang->line(( string ) $attribute['comment']);
 
                         // Проверка соперника в игре или нет
                         $this->checkRival($data['current']);
@@ -259,8 +306,6 @@ class Main extends CI_Controller
                     }
                 }
             }
-
-            set_cookie('players', md5(file_get_contents(FCPATH . 'data/players.xml')), '10');
         }
 
         $game = get_cookie('game');

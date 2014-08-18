@@ -4,7 +4,7 @@
         <base href="<?php echo base_url() ?>">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Авторизация</title>
+        <title><?php echo $title; ?></title>
         <link href="<?php echo base_url('css/cssf-base.css') ?>" rel="stylesheet">
     </head>
     <body>
@@ -12,26 +12,26 @@
             <div class="page-layout">
                 <div class="container">
                     <div class="layout-box w-100">
-                        <h4 class="a-center">Добро пожаловать в игру «Крестики-нолики»!</h4>
+                        <h4 class="a-center"><?php echo $welcome; ?></h4>
                         <div class="box content w-55" style="margin-left:125px;">
-                            <form action="<?php echo site_url('authorization/login'); ?>" method="post" accept-charset="utf-8" role="form">
+                            <form action="<?php echo site_url('authorization/login'); ?>" method="post" accept-charset="utf-8" role="form" onsubmit="return validate_login_form();">
                                 <fieldset>
                                     <div class="f-row">
-                                        <label>Логин:</label>
+                                        <label><?php echo $tlogin; ?></label>
                                         <div class="f-inputs">
-                                            <?php echo form_input(array('name' => 'login', 'class' => 'i-login')); ?>
+                                            <input type="text" class="i-login" value="<?php echo $login; ?>" name="login" id="login">
                                         </div>
                                     </div>
                                     <div class="f-row">
-                                        <label>Пароль:</label>
+                                        <label><?php echo $password; ?></label>
                                         <div class="f-inputs">
-                                            <?php echo form_password(array('name' => 'password', 'class' => 'i-login')); ?>
+                                            <input type="password" class="i-login" value="" name="password" id="password">
                                         </div>
                                     </div>
                                 </fieldset>
                                 <div class="f-row f-actions">
-                                    <div style="padding-left: 25px;">
-                                        <?php echo form_submit('', 'Войти', 'type="submit" class="button"'); ?> | <a href="<?php print site_url('user/registration'); ?>">Зарегистрироваться</a>
+                                    <div style="text-align: center;">
+                                        <input type="submit" value="<?php echo $button_text; ?>" name="" class="button"> | <a href="<?php print site_url('user/registration'); ?>"><?php echo $reg; ?></a>
                                     </div>
                                 </div>
                             </form>
@@ -41,6 +41,34 @@
                 <em class="bl"></em>
                 <em class="br"></em>
             </div>
+            <div class="errors" id="login-errors">
+                <?php if($errors): ?>
+                    <?php echo $errors; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </body>
+    <script type="text/javascript">
+        
+        function validate_login_form(){
+            var login = document.getElementById('login').value;
+            var password = document.getElementById('password').value;
+            var counter = 0;
+
+            var div = document.getElementById('login-errors');
+            div.innerHTML = '';
+
+            if (login.length < 1 || password.length < 1){
+                div.innerHTML += '<li><?php echo $this->lang->line('error_login'); ?></li>';
+                counter++;
+            }
+
+            if (counter > 0)
+                return false;
+            else
+                return true;
+        }
+
+        
+    </script>
 </html>

@@ -31,18 +31,27 @@ dfn {
 
 #body {
     float: left;
-    width: 390px;
+    width: 500px;
     text-align: center;
 }
 
-#sidebar {
-    float:left;
-    width:450px;
+#body h3{
+    width: 500px;
 }
 
-#sidebar ul {
-    float:left;
+.game_div{
+    width: 500px;
+}
+
+#sidebar {
+    float:right;
     width:250px;
+}
+
+.information {
+    margin-left: 676px;
+    margin-top: 426px;
+    width: 205px;
 }
 
 #switch_lang {
@@ -50,8 +59,9 @@ dfn {
 }
 
 #letsplay_form {
-    float:left;
-    width:150px;
+    float: right;
+    margin-right: 22px;
+    width: 200px;
 }
 
 #body table{
@@ -62,8 +72,8 @@ dfn {
 
 #body table td{
     border: 1px solid #000;
-    width: 50px;
-    height: 50px;
+    width: 107px;
+    height: 107px;
     background: #fff;
 }
 
@@ -73,6 +83,11 @@ dfn {
 
 #sidebar .busy{
     color: #990000;
+}
+
+#body .notification span{
+    margin-top: 100px;
+    background:#fff;
 }
 
 #body .errors{
@@ -115,13 +130,14 @@ dfn {
     margin: 20px 0 20px 0;
     padding: 40px 0 40px 0;
     overflow: hidden;
-    border: 0.5px dotted #000;
+    border: 1px dotted #000;
     border-radius: 10px;
     height: 600px;
 }
 
 .game_field h3{
     margin: 20px 0 20px 0;
+    text-align: center;
 }
 
 #step_0, 
@@ -131,6 +147,27 @@ dfn {
 }
 
 #letsplay{
-    width: 146px;
+    width: 200px;
+    border: 1px solid #000;
+    padding: 2px;
 }
 
+#players_list{
+    width: 200px;
+}
+
+.button{
+    margin: 3px;
+    width: 140px;
+    padding: 2px;
+}
+
+.success-game{
+    background: rgb(220, 255, 166);
+    border: 1px solid #000;
+}
+
+.cansel-game{
+    border: 1px solid #000;
+    background: #FDC2B0;
+}
