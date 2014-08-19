@@ -28,13 +28,13 @@
                     </div>
                     <div class="confirm_game" id="confirm_<?php print $uid; ?>" style="display: none;">
                         <form action="<?php echo site_url('main/confirmGame'); ?>" method="post">
-                            <input type="hidden" name="current_plaeyr" value="<?php print $uid; ?>">
+                            <input type="hidden" name="current_player" value="<?php print $uid; ?>">
                             <input type="hidden" name="rival_player" value="">
                             <span id="rival_player"><?php echo $received; ?> <b></b></span> 
                             <br/><input type="submit" value="<?php echo $agree; ?>" class="button success-game">
                         </form>
                         <form action="<?php echo site_url('main/canselgame'); ?>" method="post">
-                            <input type="hidden" name="current_plaeyr" value="<?php print $uid; ?>">
+                            <input type="hidden" name="current_player" value="<?php print $uid; ?>">
                             <input type="hidden" name="rival_player" value="">
                             <input type="submit" value="<?php echo $cansel; ?>" class="button cansel-game">
                         </form>
@@ -53,7 +53,7 @@
                     </div>
                     <div class="recall" style="display: none;">
                         <form action="<?php echo site_url('main/canselgame'); ?>" method="post">
-                            <input type="hidden" name="current_plaeyr" value="<?php print $uid; ?>">
+                            <input type="hidden" name="current_player" value="<?php print $uid; ?>">
                             <input type="hidden" name="rival_player" value="">
                             <br/><input type="submit" value="<?php echo $recall; ?>" class="button cansel-game">
                         </form>
@@ -199,7 +199,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: 'main/letsStep',
+                    url: '<?php echo site_url('main/letsstep'); ?>',
                     data: 'uid=' + uid + '&mark=' + mark + '&field_id=' + field_id + '&x=' + x + '&y=' + y,
                     dataType: 'json',
                     async: false,
@@ -219,10 +219,27 @@
         function get_players() {
             $.ajax({
                 type: 'POST',
-                url: 'main/getgame',
+                url: '<?php echo site_url('main/getgame'); ?>',
                 dataType: 'json',
                 async: false,
                 success: function(json) {
+
+                    var errors = $.trim($('.errors').html());
+                    if (errors){
+                        
+                        var error_timer = $.cookie('error_timer');
+                        if ( ! error_timer){
+                            error_timer = 0;
+                        }
+                        
+                        $.cookie('error_timer', ++error_timer);
+                        
+                        if(error_timer > 2){
+                            $('.errors').html('');
+                            $.removeCookie('error_timer', { path: '/' });
+                        }
+
+                    }
 
                     if($.cookie('game')){
                         var move = $.cookie('move');
@@ -322,11 +339,16 @@
 
                     var errors = $.cookie('errors');
                     if (errors){
+                        
+                        $('.win').css('display', 'none');
+                        $('.lose').css('display', 'none');
+                        $('.recall').css('display', 'none');
+                        
                         $('.errors').html(errors);
+                        
                         $.removeCookie('errors', { path: '/' });
                         $.removeCookie('move', { path: '/' });
                     }
-
 
                 }
             });
