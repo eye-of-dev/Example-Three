@@ -110,7 +110,7 @@ class Main extends CI_Controller
      */
     public function confirmGame()
     {
-        $game = 'game_' . $this->input->post('current_plaeyr') . 'x' . $this->input->post('rival_player');
+        $game = 'game_' . $this->input->post('current_player') . 'x' . $this->input->post('rival_player');
 
         $fp = fopen(FCPATH . 'data/' . $game, 'w');
         
@@ -126,10 +126,10 @@ class Main extends CI_Controller
         fwrite($fp, serialize($data));
         fclose($fp);
 
-        $step = 'step_' . $this->input->post('current_plaeyr') . 'x' . $this->input->post('rival_player');
+        $step = 'step_' . $this->input->post('current_player') . 'x' . $this->input->post('rival_player');
 
         $results = simplexml_load_file(base_url('data/players.xml'));
-        $player = $results->xpath('//player[@id="' . $this->input->post('current_plaeyr') . '"]');
+        $player = $results->xpath('//player[@id="' . $this->input->post('current_player') . '"]');
 
         $dom = dom_import_simplexml($player[0]);
         foreach ($player[0]->attributes() as $attr => $value)
@@ -168,10 +168,11 @@ class Main extends CI_Controller
      * Возможность отказаться от игры
      * @return void
      */
-    public function canselgame(){
+    public function canselGame()
+    {
         
         $results = simplexml_load_file(base_url('data/players.xml'));
-        $player = $results->xpath('//player[@id="' . $this->input->post('current_plaeyr') . '"]');
+        $player = $results->xpath('//player[@id="' . $this->input->post('current_player') . '"]');
 
         $dom = dom_import_simplexml($player[0]);
         foreach ($player[0]->attributes() as $attr => $value)
@@ -183,14 +184,20 @@ class Main extends CI_Controller
         
         $player = $results->xpath('//player[@id="' . $this->input->post('rival_player') . '"]');
         
-        $dom = dom_import_simplexml($player[0]);
-        foreach ($player[0]->attributes() as $attr => $value)
+        if ($player)
         {
-            $this->setAttribute($dom, $attr);
+            $dom = dom_import_simplexml($player[0]);
+            foreach ($player[0]->attributes() as $attr => $value)
+            {
+                $this->setAttribute($dom, $attr);
+            }
+
+            $this->setAttribute($dom, 'status', 'free');
+            $this->setAttribute($dom, 'comment', 'cansel_game');   
+        }else
+        {
+            set_cookie('errors', $this->lang->line('out'), '2678400');
         }
-        
-        $this->setAttribute($dom, 'status', 'free');
-        $this->setAttribute($dom, 'comment', 'cansel_game');
         
         $results->asXML(FCPATH . 'data/players.xml');
 
@@ -445,43 +452,26 @@ class Main extends CI_Controller
     /**
      * Функция вычисления выигрыша
      * @param array $data Массив крестики-нолики
+     * @return void
      */
     private function checkGameResult($data)
     {
         $uid = $this->input->post('uid');
-        $mark = $this->input->post('mark');
 
         // Проверка выигрыша по горизонтали
-        $sArray = json_encode($data);
-        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
-            $cross = $this->lenthWinComb;
-        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
-            $circle = $this->lenthWinComb;
-
-        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
-        {
-            $this->gameOver($uid);
-        }
+        $this->findingCombinations($data, $uid);
         
         // Проверка выигрышной комбинации по горизонтали слева направо
+        $tmpArray = array();
         foreach ($data as $y => $yvalue)
         {
             $tmpArray[$y] = $data[$y][$y];
         }
 
-        $sArray = json_encode($tmpArray);
-        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
-            $cross = $this->lenthWinComb;
-        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
-            $circle = $this->lenthWinComb;
+        $this->findingCombinations($tmpArray, $uid);
 
-        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
-        {
-            $this->gameOver($uid);
-        }
-
-        $tmpArray = array(); 
         // Проверка выигрышной комбинации по вeртикали
+        $tmpArray = array();
         foreach ($data as $y => $yvalue)
         {
             foreach ($yvalue as $x => $xvalue)
@@ -492,16 +482,7 @@ class Main extends CI_Controller
             }
         }
         
-        $sArray = json_encode($tmpArray);
-        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
-            $cross = $this->lenthWinComb;
-        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
-            $circle = $this->lenthWinComb;
-
-        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
-        {
-            $this->gameOver($uid);
-        }
+        $this->findingCombinations($tmpArray, $uid);
 
         // Проверка выигрышной комбинации по горизонтали справа налево
         $tmpArray = array(); 
@@ -510,16 +491,8 @@ class Main extends CI_Controller
             $tmpArray[$y] = $data[$y][count($data) - ($y + 1)];
         }
         
-        $sArray = json_encode($tmpArray);
-        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
-            $cross = $this->lenthWinComb;
-        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
-            $circle = $this->lenthWinComb;
-        
-        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
-        {
-            $this->gameOver($uid);
-        }        
+        $this->findingCombinations($tmpArray, $uid);
+              
         // Проверка на ничью
         $counter = 0;
         foreach ($data as $y => $yvalue)
@@ -536,21 +509,42 @@ class Main extends CI_Controller
             $this->gameOver($uid, 'draw');
         }
     }
+    
+    /**
+     * Проверка на выигрышную комбинацию
+     * @param array $data Исходный массив значений
+     * @return void
+     */
+    private function findingCombinations($data, $uid){
+        
+        $sArray = json_encode($data);
+        if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'cross'))) !== false)
+            $cross = $this->lenthWinComb;
+        else if (strpos($sArray, json_encode(array_fill(0, $this->lenthWinComb, 'circle'))) !== false)
+            $circle = $this->lenthWinComb;
+
+        if ($cross === $this->lenthWinComb || $circle === $this->lenthWinComb)
+        {
+            // "Закрываем" игру
+            $this->gameOver($uid);
+        }
+    }
 
     /**
      * Проверка соперника в игре или нет
      * @param array $data Массив данных игрока
+     * @return void
      */
     private function checkRival($data)
     {
 
-        if ($data['status'] === 'busy' && $data['game'])
+        if ($data['status'] === 'busy')
         {
             $results = simplexml_load_file(base_url('data/players.xml'));
 
             $player = $results->xpath('//player[@id="' . $data['rival_id'] . '"]');
 
-            if (!$player)
+            if ( ! $player)
             {
                 $player = $results->xpath('//player[@id="' . $data['id'] . '"]');
 
@@ -569,7 +563,11 @@ class Main extends CI_Controller
         }
     }
 
-    public function deleteplayer()
+    /**
+     * Удаляем игрока
+     * @return void
+     */
+    public function deletePlayer()
     {
         
         
